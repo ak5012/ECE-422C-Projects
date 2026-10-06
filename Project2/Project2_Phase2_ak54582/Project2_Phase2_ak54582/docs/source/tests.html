@@ -1,0 +1,198 @@
+<style>
+table.tc { margin: 3pt 0 10pt; }
+table.tc td:first-child { width: 62pt; font-weight: 600; color: #143d6b; background: #f4f7fb; }
+table.tc tr:nth-child(even) td { background: inherit; }
+table.tc tr:nth-child(even) td:first-child { background: #f4f7fb; }
+h3 .tag { margin-left: 4pt; }
+.cases td:nth-child(1), .cases td:nth-child(2), .cases td:nth-child(3) { font-family: Consolas, "Courier New", monospace; white-space: nowrap; }
+</style>
+
+<h1>Mastermind + Wordle — Tests</h1>
+<p class="sub">Project 2, Phase II · <code>tests/assignment2/</code> · EID ak54582</p>
+<div class="meta">Wordle tests, Mastermind regression tests, and results of the latest run</div>
+
+<h2>How the tests run</h2>
+<p>The suites have no dependencies (no JUnit), so they run anywhere a JDK is installed. Each exits with status 0 only if every check passes.</p>
+<pre>javac -d out src/assignment2/*.java tests/assignment2/*.java
+java -cp out assignment2.AllTests          # both suites
+java -cp out assignment2.WordleTests       # Wordle only
+java -cp out assignment2.MastermindTests   # Mastermind: Phase I tests + Phase II regression</pre>
+<p>As in Phase I, tests work at three levels: pure scoring, the game API (with a <code>FixedSecretSource</code>, so the secret is known), and full console sessions fed through the <b>same</b> <code>ConsoleRunner</code> with an injected reader and writer. Phase II adds a fourth level: the real launcher, <code>java assignment2.Driver …</code>, run as a child process. The helpers (<code>check</code>, <code>session</code>, <code>launch</code>, <code>allCodes</code>) moved into a shared <code>TestSupport</code> class, so both suites use one harness.</p>
+<p>Game-level Wordle tests use a 20-word list built in the test, so each expected value can be checked by hand. The "real word file" and launcher tests load the external <code>data/words.txt</code> exactly as the game does.</p>
+
+<div class="box good">
+<span class="stat"><b>220 / 220</b><span>checks passed</span></span>
+<span class="stat"><b>129</b><span>Wordle checks</span></span>
+<span class="stat"><b>91</b><span>Mastermind checks (80 Phase I + 11 new)</span></span>
+<span class="stat"><b>6 / 6</b><span>planted bugs caught</span></span><br>
+Latest run: 220 passed, 0 failed, about 7 seconds. It passes both compiled with JDK 17 (<code>--release 8</code>) and on a real JDK 8 (1.8.0_492).
+</div>
+
+<h2>Required: repeated-letter cases</h2>
+<p>The assignment requires two kinds of repeated-letter test: <b>(a)</b> the guess has more copies of a letter than the secret, and <b>(b)</b> one occurrence is CORRECT while another occurrence of the same letter must <b>not</b> be marked PRESENT. All of these are checks in <code>WordleTests.scoringRepeatedLetters()</code>.</p>
+<table class="cases">
+<tr><th>Secret</th><th>Guess</th><th>Feedback</th><th>Kind</th><th>Why this answer</th></tr>
+<tr><td>APPLE</td><td>ALLEY</td><td>C P A P A</td><td>(a)</td><td>Example from the assignment. Two L's guessed, one L in the secret: only the first L is P, the second is A.</td></tr>
+<tr><td>STEAM</td><td>EERIE</td><td>P A A A A</td><td>(a)</td><td>Three E's guessed, one in the secret and none in place: only the first E is P.</td></tr>
+<tr><td>LEVEL</td><td>EERIE</td><td>P C A A A</td><td>(a)</td><td>Secret has two E's, guess has three: one C, one P, and the third E is A.</td></tr>
+<tr><td>WORLD</td><td>HELLO</td><td>A A A C P</td><td>(b)</td><td>The only L in WORLD is matched C at position 4, so the L at position 3 must be A, not P.</td></tr>
+<tr><td>THOSE</td><td>GEESE</td><td>A A A C C</td><td>(b)</td><td>The secret's single E is C at the end; the two earlier E's get nothing.</td></tr>
+<tr><td>CRANE</td><td>EERIE</td><td>A A P A C</td><td>(a)+(b)</td><td>The C match is the <i>last</i> E but is assigned first, so the two earlier E's are A. A one-pass left-to-right scorer would wrongly give P to the first E.</td></tr>
+<tr><td>ROBOT</td><td>FLOOR</td><td>A A P C P</td><td>(b)</td><td>One O is C; the other O is P only because the secret has a second O.</td></tr>
+<tr><td>SPEED</td><td>ERASE</td><td>P A A P P</td><td>repeat in both</td><td>Both words have two E's, none in place, so both E's are P.</td></tr>
+<tr><td>APPLE</td><td>PLANE</td><td>P P P A C</td><td>repeat in secret</td><td>Secret has two P's, guess has one: that P is P once.</td></tr>
+<tr><td>HELLO</td><td>LLAMA</td><td>P P A A A</td><td>repeat in both</td><td>Secret has two L's, so both guessed L's are P.</td></tr>
+<tr><td>ABBEY</td><td>BABES</td><td>P P C C A</td><td>(b)</td><td>One B is C; the other B is P via the secret's second B.</td></tr>
+<tr><td>KAYAK</td><td>KNACK</td><td>C A P A C</td><td>repeat in both</td><td>Both K's are C; one A guessed against two in the secret.</td></tr>
+<tr><td>EERIE</td><td>EERIE</td><td>C C C C C</td><td>repeat in both</td><td>All repeated letters in place: solved.</td></tr>
+</table>
+<p>Beyond the hand-picked cases, the rule is also tested as a property on 200,000 random pairs with heavy repetition: for every letter, <code>#C + #P</code> equals <code>min(copies in secret, copies in guess)</code>. That is exactly "a secret letter can satisfy at most one guessed letter, and no possible match is missed".</p>
+
+<h2>Wordle test cases</h2>
+
+<h3>W1 Every secret × every guess against an independent reference <span class="tag t-w">SCORING</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>A reference scorer written separately (nested loops with "used" flags, no maps), as in Phase I's Mastermind tests.</td></tr>
+<tr><td>Input</td><td>Every pair of strings over: 3 letters × length 5 (59,049 pairs); 5 letters × length 4 (390,625 pairs); 2 letters × length 7 (16,384 pairs). This covers every repeat pattern for those sizes. Plus 200,000 random pairs of length 1–10.</td></tr>
+<tr><td>Expected</td><td>0 mismatches. Also: C exactly where letters are equal; P never given for a letter the secret lacks; solved exactly when guess = secret; Wordle's #C/#P equal Mastermind's black/white for the same strings.</td></tr>
+<tr><td>Why</td><td>The hand cases above can only cover a few patterns; this covers all of them for small alphabets.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W2 Invalid guesses are rejected and never use an attempt (API) <span class="tag t-w">INVALID INPUT</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>Default configuration (6 guesses, 5 letters), secret APPLE</td></tr>
+<tr><td>Input</td><td><code>""</code>, <code>APP</code>, <code>APPLES</code>, <code>APPL3</code>, <code>AP LE</code>, <code>ZZZZZ</code> (not a word), five spaces, tab, <code>ÄPPLE</code>, <code>apple!</code>, <code>A.P.P</code>; then <code>␣␣alley␣</code></td></tr>
+<tr><td>Expected</td><td>All 11 throw <code>IllegalArgumentException</code> from <code>submit</code>; <code>attemptsUsed()</code> stays 0 and history stays empty. The messages name the problem: "exactly 5 letters", "only the letters A-Z", "ZZZZZ is not in the word list". The padded lowercase <code>alley</code> is accepted, stored as <code>ALLEY</code>, scored <code>C P A P A</code>, and uses exactly one attempt. A later invalid guess changes nothing.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W3 Invalid guesses in a console session <span class="tag t-w">INVALID INPUT</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>Secret APPLE, normal mode</td></tr>
+<tr><td>Input</td><td><code>APP</code>, <code>ZZZZZ</code>, <code>APP1E</code>, empty line, <code>APPLE</code>, <code>N</code></td></tr>
+<tr><td>Expected</td><td>Exactly 4 <code>INVALID_GUESS</code> lines, including <code>INVALID_GUESS: ZZZZZ is not in the word list</code>. "Guess 1 of 6" appears 5 times because the counter does not advance. Then a win.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W4 HISTORY <span class="tag t-w">HISTORY</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>Secret APPLE</td></tr>
+<tr><td>Input</td><td><code>HISTORY</code>, <code>ALLEY</code>, <code>CRANE</code>, <code>HISTORY</code>, <code>history</code>, <code>APPLE</code>, <code>N</code>; separately <code>ALLEY</code>, <code>ZZZZZ</code>, <code>HISTORY</code></td></tr>
+<tr><td>Expected</td><td>The first HISTORY prints "No guesses yet." Later ones list <code>1. ALLEY  C P A P A</code> before <code>2. CRANE  A A P A C</code>. The lowercase command also works (2 history blocks). The next prompt is "Guess 3 of 6", so HISTORY costs no attempt. An invalid guess never appears in the history.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W5 Win, loss, and the last guess <span class="tag t-w">WIN / LOSS</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>Secret APPLE, 6 guesses</td></tr>
+<tr><td>Input</td><td>(a) <code>APPLE</code> at once. (b) 6 × <code>CRANE</code>. (c) 5 × <code>CRANE</code>, then <code>APPLE</code>.</td></tr>
+<tr><td>Expected</td><td>(a) <code>WON</code>, solved, feedback <code>C C C C C</code>; a further <code>submit</code> throws <code>IllegalStateException</code>. In a console session, <code>ALLEY</code> then <code>APPLE</code> prints "You win! Solved in 2 guess(es)." (b) Still <code>IN_PROGRESS</code> after 5; <code>LOST</code> after the 6th; "You lose! The secret was APPLE."; no 7th prompt. (c) <code>WON</code>, not <code>LOST</code>.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W6 Another game, and testing mode with fixed secrets <span class="tag t-w">REPLAY / TEST MODE</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>Test mode, fixed secrets APPLE then CRANE</td></tr>
+<tr><td>Input</td><td><code>APPLE</code>, <code>Y</code>, <code>ALLEY</code>, <code>HISTORY</code>, <code>CRANE</code>, <code>N</code></td></tr>
+<tr><td>Expected</td><td>"[TEST MODE] Secret: APPLE" is printed before "Secret: CRANE" (the first secret is not skipped, as pinned by a Phase I regression test). Two wins. Round 2's history shows only <code>1. ALLEY  P A A P A</code>. In normal mode the secret is never printed.</td></tr>
+<tr><td>Why</td><td>The assignment requires deterministic or revealed secrets in testing mode; this covers both.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W7 Bad secrets are rejected before play <span class="tag t-w">TEST MODE</span></h3>
+<table class="tc">
+<tr><td>Input</td><td>Fixed secret <code>ZZZZZ</code> (not in the list), <code>APPLES</code> (6 letters), <code>␣apple␣</code>; Driver with <code>-Dwordle.secret=APPLE,QQQQQ</code></td></tr>
+<tr><td>Expected</td><td>The first two throw <code>IllegalStateException</code> when the round starts; <code>apple</code> is normalized to <code>APPLE</code>. The Driver rejects <code>QQQQQ</code> at startup even though it is the <i>second</i> entry.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W8 The word list is external data <span class="tag t-w">WORD LIST</span></h3>
+<table class="tc">
+<tr><td>Input</td><td>(a) Entries <code>␣␣apple␣</code>, <code>Crane</code>, blanks, <code># comment</code>, <code>#APPLE</code>, a duplicate <code>APPLE</code>, <code>apples</code>, <code>ap-le</code>, <code>12345</code>, <code>ÄPFEL</code>, <code>ALLEY⇥</code>, <code>null</code>. (b) A temp file in UTF-8 with a byte-order mark and CRLF line endings. (c) A missing file. (d) The real <code>data/words.txt</code>.</td></tr>
+<tr><td>Expected</td><td>(a) Exactly <code>APPLE, CRANE, ALLEY</code>, in file order; <code>words()</code> is unmodifiable; a list with no 5-letter words is rejected. (b) <code>APPLE, CRANE</code>. (c) <code>IOException</code>, which the Driver turns into "Error: word list not found: … (run from the project folder, or set -Dwordle.words=PATH)" and exit code 1. (d) Found, 2,271 words, every entry exactly 5 letters A–Z, no duplicates, and the example words present.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W9 Changed configuration <span class="tag t-w">CONFIGURATION</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>(a) 4-letter list <code>COLD CORD CARD WARD WORD</code>, 3 guesses, secret WORD. (b) 2 guesses, secret APPLE. (c) <code>-Dwordle.words=&lt;4-letter file&gt; -Dwordle.length=4</code> through the Driver.</td></tr>
+<tr><td>Input</td><td>(a) <code>APPLE</code>, <code>CARD</code>, <code>CORD</code>, <code>WORD</code>. (b) <code>CRANE</code>, <code>ALLEY</code>.</td></tr>
+<tr><td>Expected</td><td>(a) Rules mention "4-letter word" and "3 guesses"; the 5-letter guess is invalid; <code>A A C C</code>, <code>A C C C</code>; "Solved in 3 guess(es)". (b) Lost after exactly 2 valid guesses. (c) <code>cord</code> valid, <code>APPLE</code> invalid. The defaults are 6 and 5; 0 or negative values are rejected; a 5-letter list with a 4-letter game is rejected.</td></tr>
+<tr><td>Why</td><td>Shows that nothing in the game logic hard-codes 5 letters or 6 guesses.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W10 Both games from the same program (real launcher) <span class="tag t-e">LAUNCHER</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>Child JVMs running <code>java assignment2.Driver …</code> on the test class path (each killed if not finished within 60 s)</td></tr>
+<tr><td>Input</td><td><code>wordle test</code> with <code>-Dwordle.secret=APPLE</code>; <code>WORDLE_SECRET=CRANE</code>; <code>wordle</code> in normal mode; <code>mastermind test</code> with <code>-Dmastermind.secret=BGOP</code>; Wordle started from inside <code>out/</code>; missing word file; secret not in the list; no arguments; <code>tetris</code></td></tr>
+<tr><td>Expected</td><td>Secret revealed, <code>Result: C P A P A</code>, history and win, exit 0; the environment variable works; normal mode never prints the secret; Mastermind still runs from the same program; <code>data/words.txt</code> is found from <code>out/</code>; the error cases print one <code>Error:</code> line, no stack trace, exit 1; the usage message names both games.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>W11 Fuzz, end of input, and every word as the secret <span class="tag t-w">ROBUSTNESS</span></h3>
+<table class="tc">
+<tr><td>Input</td><td>100,000 random strings through <code>validate</code>/<code>submit</code> (19,846 valid, 80,154 invalid); 20,000 random console lines including HISTORY, Y, N and non-ASCII text; a 1,000,000-character line; input ending mid-game, at the replay prompt, or empty; CRLF line endings. A solver then plays all 2,271 words in <code>data/words.txt</code> as the secret through the real game object, always guessing the first candidate consistent with the feedback so far.</td></tr>
+<tr><td>Expected</td><td><code>validate()==null</code> exactly when <code>submit</code> succeeds, and attempts change only on success. No exception reaches the user. For the solver, the real secret is never ruled out (the game's feedback always agrees with the independent reference), and every game ends WON or LOST within 6 guesses. Measured: 2,220 of 2,271 won (97.8%), 4.27 guesses on average when won.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h2>Mastermind regression tests</h2>
+
+<h3>R1 Every Phase I check is kept <span class="tag t-m">REGRESSION</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>All 80 checks from Phase I's <code>MastermindTests</code>, updated only for renamed types (<code>MastermindConfiguration</code>, <code>FixedSecretSource</code>, <code>RandomCodeSource</code>).</td></tr>
+<tr><td>Expected</td><td>Same results as in Phase I, including the exhaustive comparison of every secret with every guess (1,679,616 + 1,048,576 pairs), 200,000 random property cases, and the solver's measured values: all 1,296 secrets won, worst case 9 guesses on RYRP, average 5.765. These numbers match Phase I exactly.</td></tr>
+<tr><td>Why</td><td><code>MastermindScorer</code> now uses the shared <code>PositionMatcher</code>, and these checks compare it against an independent reference on every possible pair.</td></tr>
+<tr><td>Result</td><td>PASS (80/80)</td></tr>
+</table>
+
+<h3>R2 Console output is identical to the Phase I build <span class="tag t-m">REGRESSION</span></h3>
+<table class="tc">
+<tr><td>Setup</td><td>Before any Phase II change, the Phase I build (from <code>Project2_Phase1_ak54582.zip</code>) was run on two scripted sessions and the complete output was saved in the test.</td></tr>
+<tr><td>Input</td><td>(a) Test mode, secrets BGOP then RRGG: <code>HISTORY</code>, <code>XXXX</code>, <code>BG</code>, <code>rrrr</code>, <code>YBGO</code>, <code>history</code>, <code>BGOP</code>, <code>maybe</code>, <code>Y</code>, <code>RGRG</code>, <code>RRGG</code>, <code>N</code>. (b) 3 guesses, 6 pegs, digit colors, secret 012345, ending in a loss.</td></tr>
+<tr><td>Expected</td><td>The Phase II output equals the saved Phase I output character for character (line endings normalized): banner, rules, prompts, error messages, feedback, history, win/loss and replay text.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h3>R3 Mastermind through the new Driver <span class="tag t-m">REGRESSION</span></h3>
+<table class="tc">
+<tr><td>Input</td><td><code>createGame("mastermind")</code> and <code>"MASTERMIND"</code>; <code>-Dmastermind.secret=BGOP, rrgg</code>; <code>BGOP,BGOX</code>; <code>BGOP,,RRRR</code>; <code>-Dwordle.secret=APPLE</code> with Mastermind; a fixed secret <code>BGO</code>; <code>score("BGOP","BGO")</code>; <code>validate(null)</code></td></tr>
+<tr><td>Expected</td><td>Phase I defaults (12 guesses, 4 pegs); case-insensitive name; secrets used in order and normalized (<code>rrgg</code> → <code>RRGG</code>); a bad later entry or an empty entry is rejected at startup; Wordle's test secret does not leak into Mastermind; wrong-length secret and mismatched scorer lengths are rejected; null input still rejected and whitespace still trimmed.</td></tr>
+<tr><td>Result</td><td>PASS</td></tr>
+</table>
+
+<h2>Do the tests catch real bugs? Planted-bug check</h2>
+<p>To check that the tests are strong enough, one deliberate bug at a time was planted in a scratch copy of the code, and both suites were run against it. A good suite should fail on every planted bug.</p>
+<table>
+<tr><th>Planted bug</th><th class="c">Wordle checks failed</th><th class="c">Mastermind checks failed</th><th class="c">Caught?</th></tr>
+<tr><td>M1 PRESENT whenever the letter appears anywhere in the secret (no counting)</td><td class="c">18</td><td class="c">10</td><td class="c">yes</td></tr>
+<tr><td>M2 A PRESENT match does not use up the secret letter</td><td class="c">15</td><td class="c">6</td><td class="c">yes</td></tr>
+<tr><td>M3 CORRECT matches are not removed before PRESENT is assigned</td><td class="c">11</td><td class="c">9</td><td class="c">yes</td></tr>
+<tr><td>M4 PRESENT assigned right to left instead of left to right</td><td class="c">14</td><td class="c">0</td><td class="c">yes</td></tr>
+<tr><td>M5 A secret is no longer checked when a round starts</td><td class="c">2</td><td class="c">2</td><td class="c">yes</td></tr>
+<tr><td>M6 Wordle accepts any 5 letters (word list not checked)</td><td class="c">12</td><td class="c">0</td><td class="c">yes</td></tr>
+</table>
+<p class="small">M4 does not change Mastermind's black/white counts (only <i>which</i> repeated letter gets P), so only the Wordle tests can catch it, and they do. While running this check, one Wordle test crashed instead of failing (it called <code>.equals</code> on a <code>null</code> message); it was rewritten so that a broken <code>validate()</code> produces a FAIL line.</p>
+
+<h2>All checks by group</h2>
+<table>
+<tr><th>Suite</th><th>Group (method)</th><th>What it covers</th><th class="c">Checks</th><th class="c">Result</th></tr>
+<tr><td>Wordle</td><td><code>scoringRepeatedLetters</code></td><td>Required repeated-letter cases (table above)</td><td class="c">13</td><td class="c">13/13</td></tr>
+<tr><td>Wordle</td><td><code>scoringOtherCases</code></td><td>All correct/absent, anagram, format, guards, value semantics</td><td class="c">10</td><td class="c">10/10</td></tr>
+<tr><td>Wordle</td><td><code>scoringExhaustiveVsOracle</code></td><td>Every pair over small alphabets (W1)</td><td class="c">3</td><td class="c">3/3</td></tr>
+<tr><td>Wordle</td><td><code>scoringProperties</code></td><td>Per-letter rule, 200,000 random pairs, cross-check with Mastermind (W1)</td><td class="c">6</td><td class="c">6/6</td></tr>
+<tr><td>Wordle</td><td><code>wordList</code></td><td>Dictionary file format and loading (W8)</td><td class="c">8</td><td class="c">8/8</td></tr>
+<tr><td>Wordle</td><td><code>realWordFile</code></td><td><code>data/words.txt</code> itself (W8)</td><td class="c">5</td><td class="c">5/5</td></tr>
+<tr><td>Wordle</td><td><code>configuration</code></td><td>Defaults, invalid settings, <code>-D</code> properties (W9)</td><td class="c">8</td><td class="c">8/8</td></tr>
+<tr><td>Wordle</td><td><code>gameRules</code></td><td>Invalid input, win/loss, history, reset, fixed and random sources (W2, W5, W7)</td><td class="c">25</td><td class="c">25/25</td></tr>
+<tr><td>Wordle</td><td><code>consoleSessions</code></td><td>Scripted sessions through the shared ConsoleRunner (W3–W6)</td><td class="c">23</td><td class="c">23/23</td></tr>
+<tr><td>Wordle</td><td><code>changedConfiguration</code></td><td>4 letters / 3 guesses; 2 guesses (W9)</td><td class="c">5</td><td class="c">5/5</td></tr>
+<tr><td>Wordle</td><td><code>driverAndLauncher</code></td><td>Driver in-process and real launcher processes (W7, W10)</td><td class="c">17</td><td class="c">17/17</td></tr>
+<tr><td>Wordle</td><td><code>fuzz</code></td><td>Random and oversized input (W11)</td><td class="c">4</td><td class="c">4/4</td></tr>
+<tr><td>Wordle</td><td><code>solverEveryWord</code></td><td>All 2,271 words played (W11)</td><td class="c">2</td><td class="c">2/2</td></tr>
+<tr><td>Mastermind</td><td>Phase I groups (9 methods)</td><td>Unchanged Phase I suite (R1)</td><td class="c">80</td><td class="c">80/80</td></tr>
+<tr><td>Mastermind</td><td><code>phase2Regression</code></td><td>Golden transcripts, Driver, test secrets (R2, R3)</td><td class="c">11</td><td class="c">11/11</td></tr>
+<tr><td colspan="3"><b>Total</b></td><td class="c"><b>220</b></td><td class="c"><b>220/220</b></td></tr>
+</table>

@@ -1,0 +1,86 @@
+<style>
+table.tc td:first-child { width: 78pt; font-weight: 600; color: #143d6b; background: #f4f7fb; }
+table.tc tr:nth-child(even) td { background: inherit; }
+table.tc tr:nth-child(even) td:first-child { background: #f4f7fb; }
+</style>
+
+<h1>Mastermind + Wordle — AI Usage</h1>
+<p class="sub">Project 2, Phase II · EID ak54582</p>
+<div class="meta">Updated from the Phase I AI.pdf to cover the Wordle extension</div>
+
+<h2>1. AI tools used</h2>
+<table>
+<tr><th style="width:30%">Tool</th><th>Used for</th></tr>
+<tr><td>Claude Code (Anthropic), model Claude Opus 5.5, run as the VS Code extension</td>
+<td>Phase II: checking which Phase I version to start from; implementing the Wordle extension and the refactoring of my Phase I code; writing the Wordle tests and the Mastermind regression tests; creating the word list <code>data/words.txt</code>; compiling and running the tests (including on Java 8) and a planted-bug check; drawing the before/after diagrams; drafting ARCHITECTURE_CHANGE, TESTS and this document.</td></tr>
+</table>
+<div class="box warn">
+<b>What changed from Phase I.</b> In Phase I no AI tool wrote submitted code; the AI only reviewed, tested and documented. In Phase II <b>the AI wrote most of the code changes</b>: the new Wordle types, the shared <code>SecretSource</code>/<code>FixedSecretSource</code>/<code>PositionMatcher</code> types, the changes to <code>AbstractGuessingGame</code>, <code>MastermindGame</code>, <code>MastermindScorer</code> and <code>Driver</code>, and the new tests. My own Phase I code carries over: <code>ConsoleRunner</code>, <code>GuessingGame</code> and <code>Turn</code> are unchanged, and the Mastermind rules, messages and the original 80-check test suite are my Phase I work. ARCHITECTURE_CHANGE.md has a "Who decided what" table that marks each design decision as mine (from Phase I) or an AI suggestion I accepted.
+</div>
+
+<h2>2. Important AI interactions</h2>
+
+<h3>Interaction 1: Making sure Phase II starts from what I submitted</h3>
+<table class="tc">
+<tr><td>What I asked</td><td>Verify that <code>Project2_Phase1_ak54582.zip</code> is my previous assignment, then build Phase II on top of it.</td></tr>
+<tr><td>What the AI did</td><td>Found two different Phase I versions on my machine: the zip (dated Sep 22) and an older folder (Sep 21) with extra stress-testing changes and 119 tests. It compared dates and diffs and noted that the zip is newer, and that its AI.pdf says the code is mine and that I rejected the AI's suggested parsing change. It concluded the zip was what I submitted, built Phase II on it, and did <b>not</b> bring in the changes from the unsubmitted folder.</td></tr>
+<tr><td>Why it mattered</td><td>The assignment requires starting from the submitted Phase I codebase. Quietly building on the wrong version would have mixed unsubmitted AI changes into the "before" state of the report.</td></tr>
+</table>
+
+<h3>Interaction 2: Planning the refactor from my Phase I design</h3>
+<table class="tc">
+<tr><td>What I asked</td><td>Extend the design to support Wordle responsibly, without duplicating the game runner or console code.</td></tr>
+<tr><td>What the AI did</td><td>Read my Phase I Design.pdf and AI.pdf first. It carried out the refactor I had planned in Phase I (a game-independent secret source in place of <code>CodeGenerator</code>) and proposed two further changes: moving the secret's life cycle into <code>AbstractGuessingGame</code>, and pulling the repeated-symbol rule out of <code>MastermindScorer</code> into a shared <code>PositionMatcher</code>. The second one reverses a position I took in Phase I, and the AI pointed that out explicitly. It left my three core types (<code>GuessingGame</code>, <code>ConsoleRunner</code>, <code>Turn</code>) untouched and, like me in Phase I, decided against generic types.</td></tr>
+<tr><td>How it was checked</td><td>Wordle's specification states the same rule as Mastermind ("CORRECT matches are assigned before PRESENT; a secret letter occurrence cannot satisfy more than one guessed letter"), which is what justifies sharing one implementation. The Phase I exhaustive tests, which compare every Mastermind secret with every guess against an independent scorer, still pass on the shared code.</td></tr>
+</table>
+
+<h3>Interaction 3: Proving Mastermind did not change</h3>
+<table class="tc">
+<tr><td>What the AI did</td><td>Before editing anything, it compiled my Phase I zip, ran its 80 tests (80/80), and captured the complete console output of two scripted Mastermind sessions from that build. Those transcripts became regression tests: the Phase II output must match them character for character.</td></tr>
+<tr><td>Result</td><td>Both transcripts match exactly. The Phase I solver statistics (all 1,296 secrets won, worst case 9 guesses on RYRP, average 5.765) are also identical, as expected if scoring behaves the same.</td></tr>
+</table>
+
+<h3>Interaction 4: Where the AI got things wrong, and how testing caught it</h3>
+<table class="tc">
+<tr><td>Encoding bug</td><td>The AI meant to write Java escapes such as <code>&#92;u00c4</code> and <code>&#92;ufeff</code>, but the files ended up containing the literal characters. On Windows, <code>javac</code> reads source files as Cp1252 by default, so a test for a word file with a byte-order mark failed, and some fuzz inputs were silently different from what the test claimed. Fixed by converting every <code>.java</code> file to pure ASCII and re-running everything.</td></tr>
+<tr><td>Wrong expected value</td><td>One expected feedback was worked out by hand incorrectly (<code>P A P A P</code> for secret CRANE, guess ALLEY; the correct answer is <code>P A A P A</code>). It was caught by re-deriving the value before the first run.</td></tr>
+<tr><td>Weak test</td><td>The planted-bug check showed that one Wordle test <i>crashed</i> on a broken implementation instead of reporting a failure. It was rewritten so the failure is reported. One planted bug was itself written badly (it threw an exception, so its failure counts were incomplete) and was redone.</td></tr>
+<tr><td>Hang</td><td>Once, while the planted-bug script ran under Python, a test run hung for 10 minutes; it could not be reproduced. As a safeguard, the helper that launches the real program now kills a child process after 60 seconds, so a hang fails one check instead of freezing the suite.</td></tr>
+<tr><td>Lesson</td><td>As in Phase I, the AI was fast and thorough but not reliable on its own; every one of these problems was found by running and checking, not by reading the code.</td></tr>
+</table>
+
+<h3>Interaction 5: Documents and PDFs</h3>
+<p>The same approach as Phase I: HTML printed to PDF with headless Microsoft Edge. ARCHITECTURE_CHANGE.md is the single source for ARCHITECTURE_CHANGE.pdf, so the two cannot drift apart. The class diagrams are generated by a script and were checked by rendering them to images, which exposed overlapping labels and text overflowing boxes; those were fixed. Sources are in <code>docs/source/</code> (<code>python build_diagrams.py</code>, then <code>python build_pdfs.py</code>).</p>
+
+<h2>3. AI suggestions I accepted</h2>
+<p>The full list with reasons is in ARCHITECTURE_CHANGE.md (decisions D6–D13 and D15). In short:</p>
+<ul>
+<li>A non-generic <code>SecretSource</code>, with secrets checked by the game rather than by the source (D6).</li>
+<li>The secret's life cycle in <code>AbstractGuessingGame</code>, with the rule "a secret must be a legal guess" (D7).</li>
+<li>The shared <code>PositionMatcher</code> used by both scorers (D8).</li>
+<li>Renaming <code>GameConfiguration</code> and <code>Feedback</code> to Mastermind-specific names (D9).</li>
+<li>Leaving <code>ConsoleRunner</code>, <code>GuessingGame</code> and <code>Turn</code> unchanged, with both games printing <code>Result: …</code> (D10).</li>
+<li>One testing-mode convention for both games, <code>-D&lt;game&gt;.secret</code>, checked at startup (D11).</li>
+<li>The word-list file format and lookup (D12), and no generic types (D13).</li>
+<li>Golden-transcript regression tests for Mastermind (D15).</li>
+</ul>
+
+<h2>4. Suggestions not taken</h2>
+<h3>A Phase I decision of mine that still stands</h3>
+<p>In Phase I I rejected the AI's suggestion to make numeric <code>-D</code> settings strict, so that, for example, <code>-Dmastermind.guesses=abc</code> is an error instead of quietly using the default (my reasons are in the Phase I AI.pdf). Phase II keeps that decision and applies it consistently: the new <code>-Dwordle.guesses</code> and <code>-Dwordle.length</code> settings behave the same way as Mastermind's (D14).</p>
+<h3>Alternatives the AI considered and rejected itself</h3>
+<ul>
+<li><b>Generic types</b> (<code>GuessingGame&lt;F&gt;</code>, <code>Turn&lt;F&gt;</code>, <code>SecretSource&lt;S&gt;</code>). Both games use strings for secrets and guesses, and the runner only prints feedback, so type parameters would add noise everywhere for no benefit.</li>
+<li><b>A game registry or plugin system</b> in <code>Driver</code>. With two games, a <code>switch</code> is clearer.</li>
+<li><b>A shared configuration base class.</b> The only shared setting is the attempt limit, which the base class already receives as an <code>int</code>.</li>
+<li><b>Printing <code>Feedback:</code> instead of <code>Result:</code></b> to match the assignment's example. It would have changed Mastermind's Phase I output for no functional gain.</li>
+<li><b>A separate list of possible answers</b> in addition to the allowed guesses. The specification works with one list, and a second file would add configuration without changing the architecture.</li>
+</ul>
+
+<h2>5. How the result was checked</h2>
+<ul>
+<li>220 checks (129 Wordle, 91 Mastermind) pass when compiled with JDK 17 (<code>--release 8</code>) and on a real JDK 8.</li>
+<li>All 80 Phase I checks pass unchanged, and two Mastermind sessions match the Phase I build character for character.</li>
+<li>Six deliberately planted bugs were each caught by the suites (TESTS.pdf).</li>
+<li>Both games were also played by hand through <code>java assignment2.Driver wordle test</code> and <code>mastermind test</code>, including launching from inside <code>out/</code> and the error cases (missing word file, bad test secret).</li>
+</ul>

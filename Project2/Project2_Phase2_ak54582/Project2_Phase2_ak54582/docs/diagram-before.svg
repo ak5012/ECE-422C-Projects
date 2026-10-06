@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 915" font-family="Segoe UI, Arial, Helvetica, sans-serif">
+<defs>
+<marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9" fill="none" stroke="#37474f" stroke-width="1.4"/></marker>
+<marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 Z" fill="#fff" stroke="#37474f" stroke-width="1.4"/></marker>
+<marker id="dia" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="14" markerHeight="10" orient="auto"><path d="M1,5 L7,1 L13,5 L7,9 Z" fill="#37474f" stroke="#37474f"/></marker>
+</defs>
+<style>
+.zone{fill-opacity:.55;stroke-width:1.4}
+.zr{fill:#eef7ee;stroke:#2e7d32} .zm{fill:#eaf2fb;stroke:#1565c0} .zw{fill:#f5eefa;stroke:#6a1b9a}
+.zt{font-size:12.5px;font-weight:700;letter-spacing:.2px} .tr{fill:#1b5e20} .tm{fill:#0d47a1} .tw{fill:#4a148c}
+.cls rect{stroke-width:1.5}
+.cls.r rect{fill:#fff;stroke:#2e7d32} .cls.m rect{fill:#fff;stroke:#1565c0} .cls.w rect{fill:#fff;stroke:#6a1b9a}
+.cls.e rect{fill:#fff4e5;stroke:#ef6c00}
+.nm{font-size:14px;font-weight:700;fill:#111} .st{font-size:10.5px;fill:#555;font-style:italic}
+.sep{stroke:#9aa;stroke-width:1}
+.mb{font-family:Consolas, "Courier New", monospace;font-size:11.2px;fill:#222;white-space:pre}
+.ln{stroke:#37474f;stroke-width:1.4;fill:none}
+.lb{font-size:10.5px;fill:#37474f;font-style:italic}
+.nt{font-size:11.2px;fill:#1b5e20} .ntr{font-size:11.2px;fill:#7f1d1d} .nth{font-size:11.5px;fill:#7f1d1d;font-weight:700}
+.leg{font-size:11px;fill:#222}
+.bd{font-size:8.4px;font-weight:700;fill:#fff;letter-spacing:.3px}
+.co{font-size:10.5px;font-weight:700;fill:#fff}
+</style>
+<rect width="1000" height="915" fill="#fff"/>
+<rect class="zone zr" x="15" y="130" width="430" height="770" rx="8"/>
+<text class="zt tr" x="29" y="149">REUSABLE  —  game-independent</text>
+<rect class="zone zm" x="480" y="130" width="505" height="770" rx="8"/>
+<text class="zt tm" x="494" y="149"></text>
+<text class="zt tm" x="970" y="149" text-anchor="end">MASTERMIND-SPECIFIC  —  pegs, colors, secret code</text>
+<g class="cls e">
+<rect x="360" y="15" width="280" height="99.5" rx="4"/>
+<text class="nm" x="500.0" y="39" text-anchor="middle">Driver</text>
+<line class="sep" x1="360" y1="53" x2="640" y2="53"/>
+<text class="mb" x="368" y="67.5">main(args)  // mastermind [test]</text>
+<text class="mb" x="368" y="84.0">createGame(name, testMode)</text>
+<text class="mb" x="368" y="100.5">reads -Dmastermind.secret inline</text>
+</g>
+<g class="cls r">
+<rect x="35" y="165" width="395" height="116.0" rx="4"/>
+<text class="nm" x="232.5" y="189" text-anchor="middle">ConsoleRunner</text>
+<line class="sep" x1="35" y1="203" x2="430" y2="203"/>
+<text class="mb" x="43" y="217.5">- game: GuessingGame     - testMode: boolean</text>
+<text class="mb" x="43" y="234.0">- in: BufferedReader     - out: PrintStream</text>
+<text class="mb" x="43" y="250.5">+ run()   // play a round, ask &#x27;play again?&#x27;</text>
+<text class="mb" x="43" y="267.0">prompt, INVALID_GUESS, HISTORY, win/lose text</text>
+</g>
+<g class="cls r">
+<rect x="35" y="330" width="255" height="231.5" rx="4"/>
+<text class="st" x="162.5" y="344" text-anchor="middle">«interface»</text>
+<text class="nm" x="162.5" y="360" text-anchor="middle">GuessingGame</text>
+<line class="sep" x1="35" y1="368" x2="290" y2="368"/>
+<text class="mb" x="43" y="382.5">title(): String</text>
+<text class="mb" x="43" y="399.0">describeRules(): String</text>
+<text class="mb" x="43" y="415.5">startNewRound()</text>
+<text class="mb" x="43" y="432.0">status(): Status</text>
+<text class="mb" x="43" y="448.5">maxAttempts(): int</text>
+<text class="mb" x="43" y="465.0">attemptsUsed(): int</text>
+<text class="mb" x="43" y="481.5">attemptsRemaining(): int</text>
+<text class="mb" x="43" y="498.0">validate(String): String</text>
+<text class="mb" x="43" y="514.5">submit(String): Turn</text>
+<text class="mb" x="43" y="531.0">history(): List&lt;Turn&gt;</text>
+<text class="mb" x="43" y="547.5">revealSecret(): String</text>
+</g>
+<g class="cls r">
+<rect x="310" y="340" width="120" height="99.5" rx="4"/>
+<text class="st" x="370.0" y="354" text-anchor="middle">«immutable»</text>
+<text class="nm" x="370.0" y="370" text-anchor="middle">Turn</text>
+<line class="sep" x1="310" y1="378" x2="430" y2="378"/>
+<text class="mb" x="318" y="392.5">guess: String</text>
+<text class="mb" x="318" y="409.0">feedback: String</text>
+<text class="mb" x="318" y="425.5">solved: boolean</text>
+</g>
+<g class="cls r">
+<rect x="35" y="605" width="395" height="149.0" rx="4"/>
+<text class="st" x="232.5" y="619" text-anchor="middle">«abstract»</text>
+<text class="nm" x="232.5" y="635" text-anchor="middle">AbstractGuessingGame</text>
+<line class="sep" x1="35" y1="643" x2="430" y2="643"/>
+<text class="mb" x="43" y="657.5">- maxAttempts: int      - status: Status</text>
+<text class="mb" x="43" y="674.0">- history: List&lt;Turn&gt;</text>
+<text class="mb" x="43" y="690.5">+ startNewRound()        «final»</text>
+<text class="mb" x="43" y="707.0">+ submit(String): Turn   «final»</text>
+<text class="mb" x="43" y="723.5"># onNewRound()           «hook»</text>
+<text class="mb" x="43" y="740.0"># evaluate(String): Turn «hook»</text>
+</g>
+<g class="cls m">
+<rect x="500" y="165" width="215" height="149.0" rx="4"/>
+<text class="st" x="607.5" y="179" text-anchor="middle">«immutable»</text>
+<text class="nm" x="607.5" y="195" text-anchor="middle">GameConfiguration</text>
+<line class="sep" x1="500" y1="203" x2="715" y2="203"/>
+<text class="mb" x="508" y="217.5">- maxGuesses: int</text>
+<text class="mb" x="508" y="234.0">- pegCount: int</text>
+<text class="mb" x="508" y="250.5">- colors: String</text>
+<text class="mb" x="508" y="267.0">+ defaults()</text>
+<text class="mb" x="508" y="283.5">+ fromSystemProperties()</text>
+<text class="mb" x="508" y="300.0">+ isLegalColor(char)</text>
+</g>
+<g class="cls m">
+<rect x="740" y="165" width="225" height="66.5" rx="4"/>
+<text class="st" x="852.5" y="179" text-anchor="middle">«interface»</text>
+<text class="nm" x="852.5" y="195" text-anchor="middle">CodeGenerator</text>
+<line class="sep" x1="740" y1="203" x2="965" y2="203"/>
+<text class="mb" x="748" y="217.5">nextCode(config): String</text>
+</g>
+<g class="cls m">
+<rect x="740" y="250" width="225" height="83.0" rx="4"/>
+<text class="nm" x="852.5" y="274" text-anchor="middle">RandomCodeGenerator</text>
+<line class="sep" x1="740" y1="288" x2="965" y2="288"/>
+<text class="mb" x="748" y="302.5">uniform random color per peg</text>
+<text class="mb" x="748" y="319.0">+ nextCode(config)</text>
+</g>
+<g class="cls m">
+<rect x="740" y="350" width="225" height="83.0" rx="4"/>
+<text class="nm" x="852.5" y="374" text-anchor="middle">FixedCodeGenerator</text>
+<line class="sep" x1="740" y1="388" x2="965" y2="388"/>
+<text class="mb" x="748" y="402.5">fixed secrets (test mode)</text>
+<text class="mb" x="748" y="419.0">checks pegs/colors vs config</text>
+</g>
+<g class="cls m">
+<rect x="500" y="570" width="465" height="149.0" rx="4"/>
+<text class="nm" x="732.5" y="594" text-anchor="middle">MastermindGame</text>
+<line class="sep" x1="500" y1="608" x2="965" y2="608"/>
+<text class="mb" x="508" y="622.5">- config: GameConfiguration   - generator: CodeGenerator</text>
+<text class="mb" x="508" y="639.0">- secret: String</text>
+<text class="mb" x="508" y="655.5"># onNewRound()     secret = generator.nextCode(config)</text>
+<text class="mb" x="508" y="672.0">+ validate(input)  length + legal colors, case-tolerant</text>
+<text class="mb" x="508" y="688.5"># evaluate(input)  MastermindScorer -&gt; Feedback -&gt; Turn</text>
+<text class="mb" x="508" y="705.0">+ title() / describeRules() / revealSecret()</text>
+</g>
+<g class="cls m">
+<rect x="500" y="770" width="215" height="99.5" rx="4"/>
+<text class="st" x="607.5" y="784" text-anchor="middle">«utility»</text>
+<text class="nm" x="607.5" y="800" text-anchor="middle">MastermindScorer</text>
+<line class="sep" x1="500" y1="808" x2="715" y2="808"/>
+<text class="mb" x="508" y="822.5">static score(secret, guess)</text>
+<text class="mb" x="508" y="839.0">exact matches first, then</text>
+<text class="mb" x="508" y="855.5">min(count) per color</text>
+</g>
+<g class="cls m">
+<rect x="740" y="770" width="225" height="99.5" rx="4"/>
+<text class="st" x="852.5" y="784" text-anchor="middle">«immutable»</text>
+<text class="nm" x="852.5" y="800" text-anchor="middle">Feedback</text>
+<line class="sep" x1="740" y1="808" x2="965" y2="808"/>
+<text class="mb" x="748" y="822.5">- black: int   - white: int</text>
+<text class="mb" x="748" y="839.0">toString() -&gt; &quot;nB_mW&quot;</text>
+<text class="mb" x="748" y="855.5">equals / hashCode</text>
+</g>
+<line class="ln" x1="150" y1="281" x2="150" y2="330" marker-end="url(#open)"/>
+<text class="lb" x="158" y="306" text-anchor="start">uses (only this interface)</text>
+<line class="ln" x1="290" y1="385" x2="310" y2="385" stroke-dasharray="5 4" marker-end="url(#open)"/>
+<line class="ln" x1="150" y1="605" x2="150" y2="561.5" stroke-dasharray="5 4" marker-end="url(#tri)"/>
+<line class="ln" x1="372" y1="605" x2="372" y2="439.5" marker-start="url(#dia)"/>
+<text class="lb" x="380" y="565" text-anchor="start">history</text>
+<text class="lb" x="380" y="579" text-anchor="start">0..*</text>
+<line class="ln" x1="500" y1="647" x2="430" y2="647" marker-end="url(#tri)"/>
+<text class="lb" x="437" y="639" text-anchor="start">extends</text>
+<line class="ln" x1="600" y1="570" x2="600" y2="314" marker-end="url(#open)"/>
+<text class="lb" x="608" y="495" text-anchor="start">config</text>
+<polyline class="ln" points="965,615 976,615 976,197 965,197" marker-end="url(#open)"/>
+<text class="lb" x="970" y="505" text-anchor="end">generator</text>
+<polyline class="ln" points="740,290 728,290 728,197 740,197" stroke-dasharray="5 4" marker-end="url(#tri)"/>
+<polyline class="ln" points="740,390 728,390 728,290" stroke-dasharray="5 4"/>
+<line class="ln" x1="607" y1="719" x2="607" y2="770" marker-end="url(#open)"/>
+<text class="lb" x="615" y="760" text-anchor="start">uses</text>
+<line class="ln" x1="715" y1="817" x2="740" y2="817" marker-end="url(#open)"/>
+<line class="ln" x1="380" y1="114.5" x2="300" y2="165" stroke-dasharray="5 4" marker-end="url(#open)"/>
+<line class="ln" x1="505" y1="114.5" x2="505" y2="165" stroke-dasharray="5 4" marker-end="url(#open)"/>
+<text class="lb" x="330" y="124" text-anchor="end">creates + runs</text>
+<text class="lb" x="512" y="125" text-anchor="start">creates + wires</text>
+<text class="nth" x="35" y="790" text-anchor="start">What turned out to be too Mastermind-specific:</text>
+<text class="ntr" x="35" y="807" text-anchor="start">1  CodeGenerator.nextCode() takes pegs/colors (GameConfiguration).</text>
+<text class="ntr" x="35" y="824" text-anchor="start">2  The repeated-symbol rule is locked inside black/white counting.</text>
+<text class="ntr" x="35" y="841" text-anchor="start">3  Each game must store, draw and reveal its own secret.</text>
+<text class="ntr" x="35" y="858" text-anchor="start">4  Generic names on Mastermind-only types.</text>
+<text class="ntr" x="35" y="875" text-anchor="start">5  Test-mode secrets exist only for Mastermind, read inline.</text>
+<rect x="20" y="18" width="14" height="14" fill="#fff" stroke="#2e7d32" stroke-width="2"/><text class="leg" x="40" y="30">reusable (Phase I claim)</text><rect x="20" y="40" width="14" height="14" fill="#fff" stroke="#1565c0" stroke-width="2"/><text class="leg" x="40" y="52">Mastermind-specific</text><rect x="20" y="62" width="14" height="14" fill="#fff4e5" stroke="#ef6c00" stroke-width="2"/><text class="leg" x="40" y="74">entry point</text><line x1="690" y1="25" x2="730" y2="25" class="ln" marker-end="url(#tri)"/><text class="leg" x="738" y="29">extends</text><line x1="690" y1="47" x2="730" y2="47" class="ln" stroke-dasharray="5 4" marker-end="url(#tri)"/><text class="leg" x="738" y="51">implements</text><line x1="690" y1="69" x2="730" y2="69" class="ln" marker-end="url(#open)"/><text class="leg" x="738" y="73">uses / has-a</text><line x1="830" y1="25" x2="870" y2="25" class="ln" marker-start="url(#dia)"/><text class="leg" x="878" y="29">owns</text><line x1="830" y1="47" x2="870" y2="47" class="ln" stroke-dasharray="5 4" marker-end="url(#open)"/><text class="leg" x="878" y="51">creates</text>
+<rect x="586.0" y="2" width="48.1" height="15" rx="7.5" fill="#e65100"/><text class="bd" x="610.0" y="13" text-anchor="middle">CHANGED</text>
+<rect x="360.5" y="152" width="63.5" height="15" rx="7.5" fill="#2e7d32"/><text class="bd" x="392.2" y="163" text-anchor="middle">KEPT AS IS</text>
+<rect x="220.5" y="317" width="63.5" height="15" rx="7.5" fill="#2e7d32"/><text class="bd" x="252.2" y="328" text-anchor="middle">KEPT AS IS</text>
+<rect x="391.4" y="327" width="32.6" height="15" rx="7.5" fill="#2e7d32"/><text class="bd" x="407.7" y="338" text-anchor="middle">KEPT</text>
+<rect x="375.9" y="592" width="48.1" height="15" rx="7.5" fill="#e65100"/><text class="bd" x="400.0" y="603" text-anchor="middle">CHANGED</text>
+<rect x="527.0" y="152" width="182.0" height="15" rx="7.5" fill="#1565c0"/><text class="bd" x="618.0" y="163" text-anchor="middle">RENAMED → MastermindConfiguration</text>
+<rect x="828.5" y="152" width="130.4" height="15" rx="7.5" fill="#b71c1c"/><text class="bd" x="893.8" y="163" text-anchor="middle">REPLACED → SecretSource</text>
+<rect x="808.0" y="237" width="151.1" height="15" rx="7.5" fill="#b71c1c"/><text class="bd" x="883.5" y="248" text-anchor="middle">REPLACED → RandomCodeSource</text>
+<rect x="802.8" y="337" width="156.2" height="15" rx="7.5" fill="#b71c1c"/><text class="bd" x="880.9" y="348" text-anchor="middle">REPLACED → FixedSecretSource</text>
+<rect x="911.0" y="557" width="48.1" height="15" rx="7.5" fill="#e65100"/><text class="bd" x="935.0" y="568" text-anchor="middle">CHANGED</text>
+<rect x="661.0" y="757" width="48.1" height="15" rx="7.5" fill="#e65100"/><text class="bd" x="685.0" y="768" text-anchor="middle">CHANGED</text>
+<rect x="802.8" y="757" width="156.2" height="15" rx="7.5" fill="#1565c0"/><text class="bd" x="880.9" y="768" text-anchor="middle">RENAMED → MastermindFeedback</text>
+<circle cx="733" cy="175" r="9" fill="#b71c1c"/><text class="co" x="733" y="179" text-anchor="middle">1</text>
+<circle cx="493" cy="780" r="9" fill="#b71c1c"/><text class="co" x="493" y="784" text-anchor="middle">2</text>
+<circle cx="493" cy="580" r="9" fill="#b71c1c"/><text class="co" x="493" y="584" text-anchor="middle">3</text>
+<circle cx="493" cy="175" r="9" fill="#b71c1c"/><text class="co" x="493" y="179" text-anchor="middle">4</text>
+<circle cx="733" cy="780" r="9" fill="#b71c1c"/><text class="co" x="733" y="784" text-anchor="middle">4</text>
+<circle cx="353" cy="25" r="9" fill="#b71c1c"/><text class="co" x="353" y="29" text-anchor="middle">5</text>
+</svg>
